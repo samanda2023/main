@@ -20,15 +20,15 @@ RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7302050
     rm /tmp/sdk.zip
 
 # Set up environment variables
-ENV ANDROID_SDK_ROOT /opt/android-sdk
-ENV PATH ${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin
+ENV ANDROID_HOME /opt/android-sdk
+ENV PATH ${PATH}:${ANDROID_HOME}/cmdline-tools/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator
 
-# Install SDK components
-RUN yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --licenses && \
-    ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
+# Install SDK components ${ANDROID_SDK_ROOT}/cmdline-tools/bin/
+RUN yes | sdkmanager --licenses && \
+    sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
 
 # Create AVD
-RUN echo "no" | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
+RUN echo "no" | avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
 
 # Launch emulator in background
 CMD ["emulator", "@test_avd", "-no-audio", "-no-window"]
