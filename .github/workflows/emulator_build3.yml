@@ -1,42 +1,339 @@
 name: Build Docker Image
 on: [push]
 
+permissions: {}
+
+defaults:
+  run:
+    # when the `shell` is explicitly set, the following options are automically applied:
+    #    `set -eo pipefail`
+    # These options are NOT applied by default (https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference)
+    #
+    # The output of `ps faux` on linux shows that the .bash_profile and .bashrc file is ignored
+    # ps faux ==> /usr/bin/bash --noprofile --norc -e -o pipefail <job script>.sh
+    shell: bash
+
+env:
+  # just for fun
+  HELLO: world
+
 jobs:
-  push_to_registry:
-    name: Push image to Docker Hub
-    runs-on: ubuntu-latest
+  dump-it-out:
+    name: "${{ matrix.os}} docker dump out"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+
+      matrix:
+        os:
+          - ubuntu-22.04
+
     steps:
-      -
-        name: Check out the repo
-        uses: actions/checkout@v3
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      -
-        name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      -
-        name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          platforms: |-
-            linux/arm64
-          file: ./Dockerfile
-          push: true
-          tags: usccsci104/docker:20.04
-          cache-from: type=registry,ref=usccsci104/docker:buildcache
-          cache-to: type=registry,ref=usccsci104/docker:buildcache,mode=max
-      -
-        name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: do all the docker things
+        run: |
+          
+          # setup QEMU
+          docker run --privileged --rm tonistiigi/binfmt --install all
+          
+          
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # Building multi arch docker images w/ Github Actions
+          
+          Demonstration from this discussion that I answered back in 10/2022 
+          describing at a highlevel of the official github actions from Docker
+          do.
+          
+          
+          > How to run a job in a container with architecture emulation? 
+          
+          https://github.com/orgs/community/discussions/38728
+          
+          https://docs.docker.com/build/ci/github-actions/
+          
+          ---
+          
+          Most of the commands are viewable here in the summary section. This is because
+          the job logs expire after X amount of time (90 days?), but anything written to the step summary
+          seems to persist indefinitely.
+          
+          EOF
+          
+          cat >> $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ### docker version
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker version
+          $(docker version)
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ### docker images
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker images
+          $(docker images)
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ### docker buildx ls num 1
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker buildx ls
+          $(docker buildx ls)
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ### create a docker-container builder
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker buildx create \
+            --use \
+            --name container \
+            --driver-opt network=host \
+            --driver docker-container \
+            --bootstrap
+          $(docker buildx create \
+              --use \
+              --name container \
+              --driver-opt network=host \
+              --driver docker-container \
+              --bootstrap)
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ### docker buildx ls num 2
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker buildx ls
+          $(docker buildx ls)
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          
+          # in order to build multi-arch all at once, you need to push to a registry first
+          # the github actions from docker push to ghcr but i don't want to do that just for quick testing
+          docker run --rm -d -p 5000:5000 --name registry registry:2
+          
+          echo ""
+          echo "DOCKER PS"
+          docker ps -a
+          
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ## build multi platform image
+          
+          ```console
+          OPEN_FENCE
+          
+          # warning: the actual EOF needs to be tab delimited and line up with the begging of the indentation :sad:
+          tee -a $GITHUB_STEP_SUMMARY <<'BUILD'
+          $ docker buildx build \
+              --tag localhost:5000/deric4/gha-reference \
+              --push \
+              --platform linux/amd64,linux/arm64 . \
+              --progress plain \
+              -f-<<'EOF'
+                FROM debian:latest
+                CMD echo "\n\n\tIN CONTAINER\n\tarch: $(dpkg --print-architecture)\n\n"
+              EOF
+          ...
+          BUILD
+          # docker buildx outputs on stderr, so redirect stderr to stdout in the subshell
+          tee -a $GITHUB_STEP_SUMMARY <<-BUILD
+          $(
+            2>&1 docker buildx build \
+              --tag localhost:5000/deric4/gha-reference \
+              --push \
+              --platform linux/amd64,linux/arm64 . \
+              --progress plain \
+              -f-<<-'EOF'
+          			FROM debian:latest
+          			CMD echo "\n\n\tIN CONTAINER\n\tarch: $(dpkg --print-architecture)\n\n"
+          EOF
+          )
+          BUILD
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          CLOSE_FENCE
+          
+          
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          ## docker run linux/amd64
+          :warning: check workflow file for ommitted previous steps for setting up a local registry
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker run \
+            --platform linux/amd64 \
+            --rm \
+            localhost:5000/deric4/gha-reference
+          $(
+            docker run \
+              --platform linux/amd64 \
+              --rm \
+              localhost:5000/deric4/gha-reference
+          )
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          
+          
+          ```
+          
+          CLOSE_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          <details>
+          <summary>
+          
+          ### docker inspect linux/amd64
+          
+          </summary>
+          
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker image inspect 'localhost:5000/deric4/gha-reference:latest'
+          $(docker image inspect 'localhost:5000/deric4/gha-reference:latest')
+          EOF
+          
+          cat >> $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          </details>
+          CLOSE_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          
+          ## docker run linux/arm64
+          :warning: check workflow file for ommitted previous steps for setting up a local registry
+          ```console
+          OPEN_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker run \
+            --platform linux/arm64 \
+            --rm \
+            localhost:5000/deric4/gha-reference
+          $(
+            docker run \
+              --platform linux/arm64 \
+              --rm \
+              localhost:5000/deric4/gha-reference
+          )
+          EOF
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          
+          ```
+          
+          CLOSE_FENCE
+          
+          tee -a $GITHUB_STEP_SUMMARY <<'OPEN_FENCE'
+          
+          <details>
+          <summary>
+          
+          ### docker inspect linux/arm64
+          
+          </summary>
+          
+          ```console
+          OPEN_FENCE
+          tee -a $GITHUB_STEP_SUMMARY <<EOF
+          $ docker image inspect 'localhost:5000/deric4/gha-reference:latest'
+          $(docker image inspect 'localhost:5000/deric4/gha-reference:latest')
+          EOF
+          
+          cat >> $GITHUB_STEP_SUMMARY <<'CLOSE_FENCE'
+          ```
+          
+          </details>
+          CLOSE_FENCE
+
+
+#jobs:
+#  push_to_registry:
+#    name: Push image to Docker Hub
+#    runs-on: ubuntu-latest
+#    steps:
+#      -
+#        name: Check out the repo
+#        uses: actions/checkout@v3
+#      -
+#        name: Set up QEMU
+#        uses: docker/setup-qemu-action@v2
+#      -
+#        name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v2
+#      -
+#        name: Login to DockerHub
+#        uses: docker/login-action@v2
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.repository_owner }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#      -
+#        name: Build and push
+#        uses: docker/build-push-action@v4
+#        with:
+#          context: .
+#          platforms: |-
+#            linux/arm64
+#          file: ./Dockerfile
+#          push: true
+#          tags: usccsci104/docker:20.04
+#          cache-from: type=registry,ref=usccsci104/docker:buildcache
+#          cache-to: type=registry,ref=usccsci104/docker:buildcache,mode=max
+#      -
+#        name: Image digest
+#        run: echo ${{ steps.docker_build.outputs.digest }}
 
 
 
