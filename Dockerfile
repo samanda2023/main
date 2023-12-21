@@ -24,11 +24,11 @@ ENV ANDROID_HOME /opt/android-sdk
 ENV PATH ${PATH}:${ANDROID_HOME}/cmdline-tools/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator
 
 # Install SDK components ${ANDROID_SDK_ROOT}/cmdline-tools/bin/
-RUN yes | sdkmanager --licenses && \
-    sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
+RUN yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses && \
+    /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
 
 # Create AVD
-RUN echo "no" | avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
+RUN echo "no" | /opt/android-sdk/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
 
 # Launch emulator in background
 CMD ["emulator", "@test_avd", "-no-audio", "-no-window"]
