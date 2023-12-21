@@ -1,9 +1,5 @@
 name: Build Docker Image
-
-on:
-  pull_request:
-    branches:
-      - main
+on: [push]
 
 jobs:
   push_to_registry:
