@@ -1,47 +1,84 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
-# Scripts and configuration
-COPY files/root/* /root/
-COPY files/bin/* /bin/
+# Install dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    openjdk-11-jdk \
+    wget \
+    unzip \
+    libqt5widgets5 \
+    libqt5gui5 \
+    libqt5dbus5 \
+    libqt5network5 \
+    libqt5script5 \
+    libqt5xml5 \
+    libqt5core5a
 
-# Make sure line endings are Unix
-# This changes nothing if core.autocrlf is set to input
-RUN sed -i 's/\r$//' /root/.bashrc
+# Download and install Android SDK
+RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/sdk.zip && \
+    unzip /tmp/sdk.zip -d /opt/android-sdk && \
+    rm /tmp/sdk.zip
 
-RUN apt-get update && apt-get install -y \
-    clang \
-    clang-tidy \
-    clang-format \
-    g++ \
-    make \
-    valgrind \
-    gdb \
-    llvm \
-    libgtest-dev \
-    software-properties-common \
-    cmake
+# Set up environment variables
+ENV ANDROID_SDK_ROOT /opt/android-sdk
+ENV PATH ${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator
 
-# GTEST installation for labs
-WORKDIR /usr/src/gtest
-RUN cmake CMakeLists.txt \
-    && make \
-    && cp ./lib/libgtest*.a /usr/lib \
-    && mkdir -p /usr/local/lib/gtest/ \
-    && ln -s /usr/lib/libgtest.a /usr/local/lib/gtest/libgtest.a \
-    && ln -s /usr/lib/libgtest_main.a /usr/local/lib/gtest/libgtest_main.a
+# Install SDK components
+RUN yes | ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --licenses && \
+    ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
 
-# Grading, curricula requires python3.9
-RUN add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get install -y \
-        git \
-        acl \
-        python3.9 \
-        python3.9-dev \
-        python3-pip \
-    && python3.9 -m pip install curricula curricula-grade curricula-grade-cpp curricula-compile curricula-format watchdog
+# Create AVD
+RUN echo "no" | ${ANDROID_SDK_ROOT}/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
 
-VOLUME ["/work"]
-WORKDIR /work
+# Launch emulator in background
+CMD ["emulator", "@test_avd", "-no-audio", "-no-window"]
+
+
+
+#FROM ubuntu:20.04
+#
+## Scripts and configuration
+#COPY files/root/* /root/
+#COPY files/bin/* /bin/
+#
+## Make sure line endings are Unix
+## This changes nothing if core.autocrlf is set to input
+#RUN sed -i 's/\r$//' /root/.bashrc
+#
+#RUN apt-get update && apt-get install -y \
+#    clang \
+#    clang-tidy \
+#    clang-format \
+#    g++ \
+#    make \
+#    valgrind \
+#    gdb \
+#    llvm \
+#    libgtest-dev \
+#    software-properties-common \
+#    cmake
+#
+## GTEST installation for labs
+#WORKDIR /usr/src/gtest
+#RUN cmake CMakeLists.txt \
+#    && make \
+#    && cp ./lib/libgtest*.a /usr/lib \
+#    && mkdir -p /usr/local/lib/gtest/ \
+#    && ln -s /usr/lib/libgtest.a /usr/local/lib/gtest/libgtest.a \
+#    && ln -s /usr/lib/libgtest_main.a /usr/local/lib/gtest/libgtest_main.a
+#
+## Grading, curricula requires python3.9
+#RUN add-apt-repository ppa:deadsnakes/ppa \
+#    && apt-get install -y \
+#        git \
+#        acl \
+#        python3.9 \
+#        python3.9-dev \
+#        python3-pip \
+#    && python3.9 -m pip install curricula curricula-grade curricula-grade-cpp curricula-compile curricula-format watchdog
+#
+#VOLUME ["/work"]
+#WORKDIR /work
 
 
 

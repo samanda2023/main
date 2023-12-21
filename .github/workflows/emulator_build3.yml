@@ -20,23 +20,44 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
+
     steps:
-      - name: do all the docker things
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        run: docker run --privileged --rm tonistiigi/binfmt --install all
+
+      - name: Build Docker Image
         run: |
-          docker run --privileged --rm tonistiigi/binfmt --install all
           docker buildx create --use --name container --driver-opt network=host --driver docker-container --bootstrap
           docker buildx ls
           docker run --rm -d -p 5000:5000 --name registry registry:2
-          echo ""
           echo "DOCKER PS"
           docker ps -a
-          docker buildx build --tag localhost:5000/deric4/gha-reference --push --platform linux/amd64,linux/arm64 . --progress plain -f-<<'EOF'
-            FROM debian:latest
-            CMD echo "\n\n\tIN CONTAINER\n\tarch: $(dpkg --print-architecture)\n\n"
-          EOF
-          docker run --platform linux/amd64 --rm localhost:5000/deric4/gha-reference
-          docker run --platform linux/arm64 --rm localhost:5000/deric4/gha-reference
-          docker image inspect 'localhost:5000/deric4/gha-reference:latest'
+          docker buildx build --tag localhost:5000/your-android-app --push --platform linux/amd64,linux/arm64 .
+          docker run --rm -it --privileged \
+            -e DISPLAY=$DISPLAY \
+            -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -v /dev/kvm:/dev/kvm \
+            localhost:5000/your-android-app \
+            /path/to/android-emulator -avd test_avd -gpu host
+#    steps:
+#      - name: do all the docker things
+#        run: |
+#          docker run --privileged --rm tonistiigi/binfmt --install all
+#          docker buildx create --use --name container --driver-opt network=host --driver docker-container --bootstrap
+#          docker buildx ls
+#          docker run --rm -d -p 5000:5000 --name registry registry:2
+#          echo ""
+#          echo "DOCKER PS"
+#          docker ps -a
+#          docker buildx build --tag localhost:5000/deric4/gha-reference --push --platform linux/amd64,linux/arm64 . --progress plain -f-<<'EOF'
+#            FROM debian:latest
+#            CMD echo "\n\n\tIN CONTAINER\n\tarch: $(dpkg --print-architecture)\n\n"
+#          EOF
+#          docker run --platform linux/arm64 --rm localhost:5000/deric4/gha-reference
+#          docker image inspect 'localhost:5000/deric4/gha-reference:latest'
 
 
 #jobs:
