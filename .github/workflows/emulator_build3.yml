@@ -1,6 +1,11 @@
 name: Build Docker Image
 #on: [push]
 
+push:
+#  branches: [ main ]
+  pull_request:
+    branches: [ mainn ]
+
 permissions: {}
 
 defaults:
