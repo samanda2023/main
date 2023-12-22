@@ -33,7 +33,7 @@ RUN cd /opt \
 
 # Install SDK components ${ANDROID_SDK_ROOT}/cmdline-tools/bin/
 RUN yes | sdkmanager --licenses
-RUN sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
+RUN sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a"
 
 # Create AVD
 RUN echo "no" | avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
