@@ -2,8 +2,8 @@ name: Self Hosted Runner
 on: [push]
 
 env:
-  ANDROID_SDK_ROOT: /Users/sb/Library/Android/sdk
-  ANDROID_HOME: /Users/sb/Library/Android/sdk
+  ANDROID_SDK_ROOT: /Users/samandass/Library/Android/sdk
+  ANDROID_HOME: /Users/samandass/Library/Android/sdk
 jobs:
   drive_android:
     runs-on: [self-hosted, macOS, ARM64]
