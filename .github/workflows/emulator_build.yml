@@ -2,7 +2,8 @@ name: Self Hosted Runner
 on: [push]
 
 env:
-  ANDROID_SDK_ROOT: /Users/sb/Library/Android/sdk
+  ANDROID_SDK_ROOT: ~/.android/sdk
+  ANDROID_HOME: ~/.android/sdk
 jobs:
   drive_android:
     runs-on: [self-hosted, macOS, ARM64]
@@ -22,12 +23,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-
-      - name: permission
-        run: chmod -R 777 /Users/sb
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: AVD cache
         uses: actions/cache@v3
