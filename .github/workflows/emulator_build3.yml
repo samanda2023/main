@@ -35,7 +35,7 @@ jobs:
           docker run --rm -d -p 5000:5000 --name registry registry:2
           echo "DOCKER PS"
           docker ps -a
-          docker buildx build --tag localhost:5000/your-android-app --push --platform linux/amd64,linux/arm64 .
+          docker buildx build --tag localhost:5000/your-android-app --push --platform linux/amd64,linux/arm64 --no-cache .
           docker run --rm -it --privileged \
             -e DISPLAY=$DISPLAY \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
