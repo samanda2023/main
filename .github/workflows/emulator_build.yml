@@ -23,6 +23,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: permission
+        uses: chmod -R 777 /Users/sb
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
