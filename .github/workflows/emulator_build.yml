@@ -2,8 +2,8 @@ name: Self Hosted Runner
 on: [push]
 
 env:
-  ANDROID_SDK_ROOT: ~/.android/sdk
-  ANDROID_HOME: ~/.android/sdk
+  ANDROID_SDK_ROOT: /Users/sb/Library/Android/sdk
+  ANDROID_HOME: /Users/sb/Library/Android/sdk
 jobs:
   drive_android:
     runs-on: [self-hosted, macOS, ARM64]
@@ -23,6 +23,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+
+      - run: ls -al /Users/
 
       - name: AVD cache
         uses: actions/cache@v3
