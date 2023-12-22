@@ -24,7 +24,7 @@ jobs:
           java-version: 17
 
       - name: permission
-        uses: chmod -R 777 /Users/sb
+        run: chmod -R 777 /Users/sb
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
