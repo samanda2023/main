@@ -1,5 +1,10 @@
 FROM ubuntu:22.04
 
+# Set up environment variables
+ENV ANDROID_SDK_ROOT /opt/android-sdk
+ENV ANDROID_HOME /opt/android-sdk
+ENV PATH ${PATH}:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/cmdline-tools/bin:${ANDROID_HOME}/cmdline-tools/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator
+
 # Install dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -15,17 +20,21 @@ RUN apt-get update && \
     libqt5core5a
 
 # Download and install Android SDK
-RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/sdk.zip && \
-    unzip /tmp/sdk.zip -d /opt/android-sdk && \
-    rm /tmp/sdk.zip
+#RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/sdk.zip && \
+#    unzip /tmp/sdk.zip -d /opt/android-sdk && \
+#    rm /tmp/sdk.zip
 
-# Set up environment variables
-ENV ANDROID_HOME /opt/android-sdk
-ENV PATH ${PATH}:${ANDROID_HOME}/cmdline-tools/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator
+RUN cd /opt \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O android-commandline-tools.zip \
+    && mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && unzip -q android-commandline-tools.zip -d /tmp/ \
+    && mv /tmp/cmdline-tools/ ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
+    && rm android-commandline-tools.zip && ls -la ${ANDROID_SDK_ROOT}/cmdline-tools/latest/
 
 # Install SDK components ${ANDROID_SDK_ROOT}/cmdline-tools/bin/
-RUN yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses && \
-    /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
+RUN yes | sdkmanager --licenses
+RUN sdkmanager --list
+RUN sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "system-images;android-30;google_apis;arm64-v8a" "emulator"
 
 # Create AVD
 RUN echo "no" | /opt/android-sdk/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;arm64-v8a" -d "Nexus 5X" --force
