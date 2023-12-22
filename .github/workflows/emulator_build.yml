@@ -9,7 +9,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     strategy:
       matrix:
-        api-level: [29]
+        api-level: [33]
         target: [playstore]
     steps:
       - uses: actions/checkout@v3
