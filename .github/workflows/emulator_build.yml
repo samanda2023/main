@@ -12,17 +12,17 @@ jobs:
         target: [playstore]
     steps:
       - uses: actions/checkout@v3
+      - name: Gradle cache
+        uses: gradle/gradle-build-action@v2
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          flutter-version: "3.0.5"
-          architecture: ARM64
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+
       - name: AVD cache
         uses: actions/cache@v3
         id: avd-cache
@@ -31,6 +31,7 @@ jobs:
             ~/.android/avd/*
             ~/.android/adb*
           key: avd-${{ matrix.api-level }}
+
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
@@ -40,7 +41,9 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
+          channel: canary
           script: echo "Generated AVD snapshot for caching."
+
 #      - name: Run Flutter Driver tests
 #        uses: reactivecircus/android-emulator-runner@v2
 #        with:
