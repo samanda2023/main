@@ -1,30 +1,27 @@
-name: Self Hosted Runner
+name: Github-hosted Runner
 on: [push]
 
-env:
-  ANDROID_SDK_ROOT: /Users/samandass/Library/Android/sdk
-  ANDROID_HOME: /Users/samandass/Library/Android/sdk
 jobs:
-  drive_android:
-    runs-on: [self-hosted, macOS, ARM64]
+  test:
+    runs-on: macos-latest
     strategy:
       matrix:
         api-level: [33]
-        target: [playstore]
     steps:
-      - uses: actions/checkout@v3
+      - name: checkout
+        uses: actions/checkout@v3
+
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - uses: actions/setup-java@v3
+      - name: Set up Java 11 for instrumented tests
+        uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 17
-
-      - run: ls -al /Users/
+          distribution: 'adopt'
+          java-version: 11
 
       - name: AVD cache
         uses: actions/cache@v3
@@ -35,35 +32,24 @@ jobs:
             ~/.android/adb*
           key: avd-${{ matrix.api-level }}
 
-      - name: create AVD and generate snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          arch: arm64-v8a
-          api-level: ${{ matrix.api-level }}
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: false
-          channel: canary
-          script: echo "Generated AVD snapshot for caching."
+      #      - name: create AVD and generate snapshot for caching
+      #        if: steps.avd-cache.outputs.cache-hit != 'true'
+      #        uses: reactivecircus/android-emulator-runner@v2
+      #        with:
+      #          api-level: ${{ matrix.api-level }}
+      #          force-avd-creation: false
+      #          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+      #          disable-animations: false
+      #          script: echo "Generated AVD snapshot for caching."
 
-#      - name: Run Flutter Driver tests
-#        uses: reactivecircus/android-emulator-runner@v2
-#        with:
-#          target: ${{ matrix.target }}
-#          api-level: ${{ matrix.api-level }}
-#          arch: arm64-v8a
-#          profile: Nexus 6
-#          script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart --flavor prod -d 'emulator'
       - name: run tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          target: ${{ matrix.target }}
-          arch: arm64-v8a
-          profile: Nexus 6
-#          ram-size: 2048M
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 4096M
           api-level: ${{ matrix.api-level }}
-#          force-avd-creation: false
+          force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-#          disable-animations: true
+          disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
