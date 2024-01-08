@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   drive_android:
-    runs-on: macos-latest
+    runs-on: macos-13-xlarge
     strategy:
       matrix:
         api-level: [33]
