@@ -66,6 +66,10 @@ class MainActivity : AppCompatActivity() {
                 binding.etNewQuantity.setText("1")
             }
             binding.etNewQuantity.setSelection(it?.length ?: 0)
+
+
+
+
         }
     }
 
