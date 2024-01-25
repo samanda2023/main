@@ -92,6 +92,9 @@ class MainActivity : AppCompatActivity() {
         binding.tvQuantity.text = getString(R.string.detail_quantity, selectedProduct.quantity)
     }
 
+
+
+
     private fun setNewQuantity() {
         binding.etNewQuantity.setText(selectedProduct.newQuantity.toString())
 
